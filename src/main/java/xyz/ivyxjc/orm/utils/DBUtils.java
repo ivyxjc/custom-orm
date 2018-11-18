@@ -5,8 +5,7 @@ package xyz.ivyxjc.orm.utils;
  * @since 11/14/2018
  */
 public class DBUtils {
-
-    //public <T extends StoreBean> T query(T newBean){
+    //public <T extends PoBean> T query(T newBean){
     //
     //}
 }
