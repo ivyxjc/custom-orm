@@ -8,7 +8,11 @@ import org.jetbrains.annotations.NotNull;
  * @author Ivyxjc
  * @since 11/19/2018
  */
-class ColumnManager {
+
+/**
+ * this column manager is just designed for the use of BeanDBUtils, do not user it in other place
+ */
+final class ColumnManager {
     @NotNull
     private final List<String> selectColumns;
     @NotNull
@@ -17,12 +21,15 @@ class ColumnManager {
     private final List<String> insertValueColumns;
     @NotNull
     private final List<String> updateColumns;
+    @NotNull
+    private final List<String> whereColumns;
 
     ColumnManager() {
         this.selectColumns = new ArrayList<>();
         this.insertColumns = new ArrayList<>();
         this.insertValueColumns = new ArrayList<>();
         this.updateColumns = new ArrayList<>();
+        this.whereColumns = new ArrayList<>();
     }
 
     void addSelectColumn(@NotNull String column) {
@@ -36,6 +43,10 @@ class ColumnManager {
 
     void addUpdateColumn(@NotNull String column) {
         updateColumns.add(column.concat("=:").concat(column));
+    }
+
+    void addWhereColumn(@NotNull String column) {
+        whereColumns.add(column.concat("=:".concat(column)));
     }
 
     @NotNull
@@ -56,5 +67,10 @@ class ColumnManager {
     @NotNull
     List<String> getInsertValueColumns() {
         return insertValueColumns;
+    }
+
+    @NotNull
+    public List<String> getWhereColumns() {
+        return whereColumns;
     }
 }

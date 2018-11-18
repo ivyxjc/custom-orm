@@ -21,8 +21,10 @@ import xyz.ivyxjc.orm.interfaces.PoBean;
  * @author Ivyxjc
  * @since 11/19/2018
  */
+
+/** this util is just designed for the use of BeanServiceImpl, do not use it in other place */
 @Slf4j
-public class BeanDBUtils {
+final class BeanDBUtils {
     private static final String INSERT_SQL_TEMPLATE = "INSERT INTO %s (%s) VALUES (%s)";
     private static final String UPDATE_SQL_TEMPLATE = "UPDATE %s SET %s WHERE ";
     private static final String DELETE_SQL_TEMPLATE = "DELETE FROM %s WHERE ";
@@ -94,9 +96,7 @@ public class BeanDBUtils {
         }
     }
 
-    /**
-     * 根据bean生成对应的CRUD语句 其中 generate crud statement
-     */
+    /** 根据bean生成对应的CRUD语句 其中 generate crud statement */
     static void buildSql(Class<? extends PoBean> clz) {
         log.info("buildSql starts: {}", clz);
         ColumnManager columnManager = new ColumnManager();
@@ -148,5 +148,32 @@ public class BeanDBUtils {
      */
     static String buildCacheKey(Class<? extends PoBean> clz, JdbcOperationType type) {
         return clz.getName().concat(type.name());
+    }
+
+    static String buildWhereClause(Class<? extends PoBean> clz, String... whereColumnNames) {
+        ColumnManager columnManager = new ColumnManager();
+        Arrays.stream(whereColumnNames)
+            .forEach(
+                name -> {
+                    try {
+                        Field field = clz.getClass().getField(name);
+                        Column col = field.getAnnotation(Column.class);
+                        columnManager.addWhereColumn(col.name());
+                    } catch (NoSuchFieldException e) {
+                        e.printStackTrace();
+                        log.error("NoSuchFieldException: {}", e);
+                        throw new RuntimeException(e);
+                    }
+                });
+        return StringUtils.join(columnManager.getWhereColumns(), " and ");
+    }
+
+    static String getCachedSql(Class<? extends PoBean> clz, JdbcOperationType type) {
+        String sql = sqlCache.getIfPresent(buildCacheKey(clz, type));
+        if (StringUtils.isNotBlank(sql)) {
+            return sql;
+        }
+        buildSql(clz);
+        return sqlCache.getIfPresent(buildCacheKey(clz, type));
     }
 }
