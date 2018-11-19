@@ -9,8 +9,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 import xyz.ivyxjc.orm.enumerations.JdbcOperationType;
+import xyz.ivyxjc.orm.enumerations.UpdateType;
 import xyz.ivyxjc.orm.interfaces.PoBean;
 import xyz.ivyxjc.orm.service.BeanService;
+import xyz.ivyxjc.orm.service.Updater;
 
 /**
  * @author Ivyxjc
@@ -61,5 +63,22 @@ public class BeanServiceImpl implements BeanService {
         String whereClause = BeanDBUtils.buildWhereClause(poBean.getClass(), whereColumnsNames);
         MapSqlParameterSource sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
         jdbcTemplate.update(sql.concat(whereClause), sqlParameterSource);
+    }
+
+    /**
+     * 目前不支持 自定义wheresql
+     */
+    @Override
+    public void update(PoBean poBean, Updater updater, UpdateType type) {
+        switch (type) {
+            case ALL:
+                update(poBean, (String[]) updater.getWhereColumnNames().toArray());
+                break;
+            case CUSTOM:
+
+                break;
+            case NOTNULL:
+                break;
+        }
     }
 }
