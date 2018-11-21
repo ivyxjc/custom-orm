@@ -1,0 +1,26 @@
+spring:
+    datasource:
+        druid:
+            url: jdbc:h2:mem:PUBG;MODE=MySQL
+            username: user
+            password: password
+            initial-size: 2
+            max-active: 20
+            min-idle: 5
+            max-wait: 10000
+            pool-prepared-statements: true
+            max-pool-prepared-statement-per-connection-size: 130
+            max-open-prepared-statements: 130
+            validation-query: SELECT 1 FROM DUAL
+            validation-query-timeout: 1000
+            test-on-borrow: false
+            test-on-return: false
+            test-while-idle: true
+            time-between-eviction-runs-millis: 60000
+            min-evictable-idle-time-millis: 300000
+            filter:
+                stat:
+                    merge-sql: true
+                    slow-sql-millis: 800
+
+        schema: classpath:db/ddl.sql
