@@ -103,11 +103,7 @@ final class BeanDBUtils {
         Field[] fields = clz.getDeclaredFields();
         Table table = clz.getDeclaredAnnotation(Table.class);
         Arrays.stream(fields)
-            .map(
-                item -> {
-                    Column ann = item.getAnnotation(Column.class);
-                    return ann;
-                })
+            .map(item -> item.getAnnotation(Column.class))
             .filter(Objects::nonNull)
             .forEach(
                 column -> {
@@ -150,21 +146,9 @@ final class BeanDBUtils {
         return clz.getName().concat(type.name());
     }
 
-    static String buildWhereClause(Class<? extends PoBean> clz, String... whereColumnNames) {
+    static String buildWhereClause(String... whereColumnNames) {
         ColumnManager columnManager = new ColumnManager();
-        Arrays.stream(whereColumnNames)
-            .forEach(
-                name -> {
-                    try {
-                        Field field = clz.getClass().getField(name);
-                        Column col = field.getAnnotation(Column.class);
-                        columnManager.addWhereColumn(col.name());
-                    } catch (NoSuchFieldException e) {
-                        e.printStackTrace();
-                        log.error("NoSuchFieldException: {}", e);
-                        throw new RuntimeException(e);
-                    }
-                });
+        Arrays.stream(whereColumnNames).forEach(t -> columnManager.addWhereColumn(t));
         return StringUtils.join(columnManager.getWhereColumns(), " and ");
     }
 
