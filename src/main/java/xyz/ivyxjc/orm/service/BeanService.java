@@ -1,19 +1,22 @@
 package xyz.ivyxjc.orm.service;
 
 import java.util.List;
-import xyz.ivyxjc.orm.enumerations.UpdateType;
 import xyz.ivyxjc.orm.interfaces.PoBean;
+import xyz.ivyxjc.orm.service.impl.Updater;
 
 /**
  * @author Ivyxjc
  * @since 11/17/2018
  */
 public interface BeanService {
-    void insert(PoBean poBean);
 
-    void update(PoBean poBean, String... whereColumnsNames);
+    List<PoBean> query(PoBean poBean, String... whereColumnNames);
 
-    void update(PoBean poBean, Updater updater, UpdateType type);
+    int insert(PoBean poBean);
 
-    void batchInsert(List<PoBean> poBean);
+    int[] batchInsert(List<PoBean> poBean);
+
+    int update(PoBean poBean, String... whereColumnsNames);
+
+    int update(PoBean poBean, Updater updater);
 }
