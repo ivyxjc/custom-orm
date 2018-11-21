@@ -4,10 +4,13 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.lang.reflect.Field;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Table;
+import javax.persistence.Version;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +25,9 @@ import xyz.ivyxjc.orm.interfaces.PoBean;
  * @since 11/19/2018
  */
 
-/** this util is just designed for the use of BeanServiceImpl, do not use it in other place */
+/**
+ * this util is just designed for the use of BeanServiceImpl, do not use it in other place
+ */
 @Slf4j
 final class BeanDBUtils {
     private static final String INSERT_SQL_TEMPLATE = "INSERT INTO %s (%s) VALUES (%s)";
@@ -96,7 +101,9 @@ final class BeanDBUtils {
         }
     }
 
-    /** 根据bean生成对应的CRUD语句 其中 generate crud statement */
+    /**
+     * 根据bean生成对应的CRUD语句 其中 generate crud statement
+     */
     static void buildSql(Class<? extends PoBean> clz) {
         log.info("buildSql starts: {}", clz);
         ColumnManager columnManager = new ColumnManager();
@@ -130,9 +137,15 @@ final class BeanDBUtils {
         }
         if (!columnManager.getUpdateColumns().isEmpty()) {
             String updateColumns = StringUtils.join(columnManager.getUpdateColumns(), ",");
+            List<String> verions = new ArrayList<>();
+            Arrays.stream(fields)
+                .filter(field -> field.getAnnotation(Version.class) != null)
+                .forEach(field -> verions.add(field.getAnnotation(Column.class).name()));
+            String updateVersionSql = buildUpdateVersionSql(verions);
             sqlCache.put(
                 buildCacheKey(clz, JdbcOperationType.UPDATE),
-                String.format(UPDATE_SQL_TEMPLATE, table.name(), updateColumns));
+                String.format(UPDATE_SQL_TEMPLATE, table.name(),
+                    updateColumns.concat(",").concat(updateVersionSql)));
         }
         sqlCache.put(buildCacheKey(clz, JdbcOperationType.DELETE), table.name());
     }
@@ -159,5 +172,11 @@ final class BeanDBUtils {
         }
         buildSql(clz);
         return sqlCache.getIfPresent(buildCacheKey(clz, type));
+    }
+
+    static String buildUpdateVersionSql(@NotNull List<String> version) {
+        List<String> list = new ArrayList<>();
+        version.forEach(item -> list.add(item.concat("=:").concat(item).concat("+1")));
+        return StringUtils.join(list, ",");
     }
 }

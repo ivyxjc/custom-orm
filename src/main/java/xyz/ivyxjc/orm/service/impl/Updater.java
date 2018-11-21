@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.Table;
+import javax.persistence.Version;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +28,7 @@ import xyz.ivyxjc.orm.interfaces.PoBean;
 /**
  * Not thread-safe
  */
+@Slf4j
 public class Updater {
     @Nullable
     private final List<String> updateColumnNames;
@@ -106,11 +109,14 @@ public class Updater {
         private Class<? extends PoBean> beanClz;
         private UpdateType updateType;
         private String updateSql;
+        @Nullable
+        private final List<String> versions;
 
         private Builder() {
             updateColumns = new ArrayList<>();
             whereColumnNames = new ArrayList<>();
             whereCustomSqls = new ArrayList<>();
+            versions = new ArrayList<>();
             updateType = UpdateType.ALL;
         }
 
@@ -142,6 +148,11 @@ public class Updater {
             return this;
         }
 
+        public Builder withVersionColumn(String... versionColumn) {
+            this.versions.addAll(Arrays.asList(versionColumn));
+            return this;
+        }
+
         public Updater build() {
             ColumnManager columnManager = new ColumnManager();
             Table table = beanClz.getDeclaredAnnotation(Table.class);
@@ -149,7 +160,13 @@ public class Updater {
                 case ALL:
                     Field[] fields = beanClz.getDeclaredFields();
                     Arrays.stream(fields)
-                        .map(item -> item.getAnnotation(Column.class))
+                        .map(item -> {
+                            if (item.getAnnotation(Version.class) == null) {
+                                return item.getAnnotation(Column.class);
+                            } else {
+                                return null;
+                            }
+                        })
                         .filter(Objects::nonNull)
                         .forEach(
                             column -> {
@@ -169,11 +186,16 @@ public class Updater {
             }
 
             String updateClause = StringUtils.join(columnManager.getUpdateColumns(), ",");
+            if (!versions.isEmpty()) {
+                updateClause =
+                    updateClause.concat(",").concat(BeanDBUtils.buildUpdateVersionSql(versions));
+            }
             String updateSql = String.format(UPDATE_SQL_TEMPLATE, table.name(), updateClause);
-
             whereColumnNames.forEach(t -> columnManager.addWhereColumn(t));
+            versions.forEach(t -> columnManager.addWhereColumn(t));
             String whereClause = StringUtils.join(columnManager.getWhereColumns(), " and ");
             this.updateSql = updateSql.concat(whereClause);
+            log.info("update sql is: {}", this.updateSql);
             return new Updater(this);
         }
     }

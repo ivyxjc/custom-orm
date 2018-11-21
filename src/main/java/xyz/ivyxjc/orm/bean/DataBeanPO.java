@@ -43,5 +43,6 @@ public final class DataBeanPO implements PoBean {
     private String updatedBy;
 
     @Version
+    @Column(name = "VERSION")
     private Integer version;
 }

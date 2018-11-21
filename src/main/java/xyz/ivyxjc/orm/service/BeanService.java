@@ -19,4 +19,6 @@ public interface BeanService {
     int update(PoBean poBean, String... whereColumnsNames);
 
     int update(PoBean poBean, Updater updater);
+
+    int delete(PoBean poBean, String... whereColumnsNames);
 }

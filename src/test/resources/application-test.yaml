@@ -22,5 +22,7 @@ spring:
                 stat:
                     merge-sql: true
                     slow-sql-millis: 800
+                slf4j:
+                    enabled: true
 
         schema: classpath:db/ddl.sql

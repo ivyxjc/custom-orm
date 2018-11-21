@@ -144,6 +144,16 @@ public class BeanServiceImpl implements BeanService {
             "Unsupported update type ".concat(updater.getUpdateType().name()));
     }
 
+    @Override
+    public int delete(PoBean poBean, String... whereColumnsNames) {
+        // TODO: 11/21/2018 optimize the buildParameterSource, just include needed columns
+        MapSqlParameterSource sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
+        String whereClauses = BeanDBUtils.buildWhereClause(whereColumnsNames);
+        String sql = BeanDBUtils.getCachedSql(poBean.getClass(), JdbcOperationType.DELETE);
+        sql = sql.concat(whereClauses);
+        return jdbcTemplate.update(sql, sqlParameterSource);
+    }
+
     class CustomerMapper<T extends PoBean> implements RowMapper<T> {
         private Class clz;
 
