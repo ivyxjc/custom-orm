@@ -7,6 +7,8 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Version;
 import lombok.Data;
+import xyz.ivyxjc.orm.annotation.AuditColumn;
+import xyz.ivyxjc.orm.annotation.AuditTable;
 import xyz.ivyxjc.orm.interfaces.PoBean;
 
 /**
@@ -15,6 +17,10 @@ import xyz.ivyxjc.orm.interfaces.PoBean;
  */
 @Data
 @Table(name = "DATA_BEAN")
+@AuditTable(name = "DATA_BEAN_AUDIT")
+@AuditColumn(name = "AUDITED_AT", defaultTemplateValue = "sysdate()")
+@AuditColumn(name = "AUDITED_BY", defaultStrValue = "UTUT001")
+@AuditColumn(name = "AUDIT_ACTION_CD")
 @Entity
 public final class DataBeanPO implements PoBean {
 

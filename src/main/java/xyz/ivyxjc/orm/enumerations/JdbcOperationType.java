@@ -8,5 +8,6 @@ public enum JdbcOperationType {
     SELECT,
     INSERT,
     DELETE,
-    UPDATE
+    UPDATE,
+    AUDIT_IN_APP,
 }

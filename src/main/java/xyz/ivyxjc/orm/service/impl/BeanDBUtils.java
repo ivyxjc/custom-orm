@@ -16,6 +16,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import xyz.ivyxjc.orm.annotation.AuditColumn;
+import xyz.ivyxjc.orm.annotation.AuditTable;
 import xyz.ivyxjc.orm.enumerations.JdbcOperationType;
 import xyz.ivyxjc.orm.enumerations.SupportedTypes;
 import xyz.ivyxjc.orm.interfaces.PoBean;
@@ -34,6 +36,8 @@ final class BeanDBUtils {
     private static final String UPDATE_SQL_TEMPLATE = "UPDATE %s SET %s WHERE ";
     private static final String DELETE_SQL_TEMPLATE = "DELETE FROM %s WHERE ";
     private static final String SELECT_SQL_TEMPLATE = "SELECT %s FROM %s WHERE ";
+    private static final String AUDIT_SQL_TEMPLATE =
+        "INSERT INTO %s (%s) (SELECT %s FROM %s WHERE ${WHERE_CLAUSE})";
 
     private static final Cache<String, String> sqlCache =
         CacheBuilder.newBuilder().maximumSize(300).build();
@@ -150,6 +154,50 @@ final class BeanDBUtils {
         sqlCache.put(buildCacheKey(clz, JdbcOperationType.DELETE), table.name());
     }
 
+    static void buildAuditSql(Class<? extends PoBean> clz) {
+        log.info("buildAuditSql starts: {}", clz);
+        ColumnManager auditColumnManager = new ColumnManager();
+        ColumnManager auditValueManager = new ColumnManager();
+        Field[] fields = clz.getDeclaredFields();
+        AuditTable auditTable = clz.getDeclaredAnnotation(AuditTable.class);
+        if (auditTable == null) {
+            return;
+        }
+        Table table = clz.getDeclaredAnnotation(Table.class);
+        Arrays.stream(fields)
+            .map(item -> item.getAnnotation(Column.class))
+            .filter(Objects::nonNull)
+            .forEach(
+                column -> {
+                    auditColumnManager.addSelectColumn(column.name());
+                    auditValueManager.addSelectColumn(column.name());
+                });
+        AuditColumn[] auditColumns = clz.getAnnotationsByType(AuditColumn.class);
+        if (auditColumns != null) {
+            Arrays.stream(auditColumns).forEach(t -> {
+                auditColumnManager.addSelectColumn(t.name());
+                if (StringUtils.isNotBlank(t.defaultStrValue()) && StringUtils.isNotBlank(
+                    t.defaultTemplateValue())) {
+                    throw new RuntimeException(
+                        "defaultStrValue and defaultTemplateValue cannot both have value");
+                }
+                if (StringUtils.isNotBlank(t.defaultStrValue())) {
+                    auditValueManager.addSelectColumn(String.format("'%s'", t.defaultStrValue()));
+                } else if (StringUtils.isNotBlank(t.defaultTemplateValue())) {
+                    auditValueManager.addSelectColumn(t.defaultTemplateValue());
+                } else {
+                    auditValueManager.addSelectColumn(":".concat(t.name()));
+                }
+            });
+        }
+        String auditColumnsStr = StringUtils.join(auditColumnManager.getSelectColumns(), ",");
+        String auditValueStr = StringUtils.join(auditValueManager.getSelectColumns(), ",");
+        String sql =
+            String.format(AUDIT_SQL_TEMPLATE, auditTable.name(), auditColumnsStr, auditValueStr,
+                table.name());
+        sqlCache.put(buildCacheKey(clz, JdbcOperationType.AUDIT_IN_APP), sql);
+    }
+
     /**
      * generate sql's key based on operation's type
      *
@@ -171,6 +219,7 @@ final class BeanDBUtils {
             return sql;
         }
         buildSql(clz);
+        buildAuditSql(clz);
         return sqlCache.getIfPresent(buildCacheKey(clz, type));
     }
 

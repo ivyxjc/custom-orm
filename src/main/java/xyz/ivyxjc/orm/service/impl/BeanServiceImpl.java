@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.persistence.Column;
@@ -17,6 +18,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
+import xyz.ivyxjc.orm.annotation.NotImplementedAPI;
+import xyz.ivyxjc.orm.enumerations.AuditType;
 import xyz.ivyxjc.orm.enumerations.JdbcOperationType;
 import xyz.ivyxjc.orm.enumerations.SupportedTypes;
 import xyz.ivyxjc.orm.enumerations.UpdateType;
@@ -30,11 +33,6 @@ import xyz.ivyxjc.orm.service.BeanService;
 @Slf4j
 @Repository
 public class BeanServiceImpl implements BeanService {
-
-    private static final String INSERT_SQL_TEMPLATE = "INSERT INTO %s (%s) VALUES (%s)";
-    private static final String UPDATE_SQL_TEMPLATE = "UPDATE %s SET %s WHERE ";
-    private static final String DELETE_SQL_TEMPLATE = "DELETE FROM %s WHERE ";
-    private static final String SELECT_SQL_TEMPLATE = "SELECT %s FROM %s WHERE ";
 
     @Autowired
     private NamedParameterJdbcTemplate jdbcTemplate;
@@ -152,6 +150,48 @@ public class BeanServiceImpl implements BeanService {
         String sql = BeanDBUtils.getCachedSql(poBean.getClass(), JdbcOperationType.DELETE);
         sql = sql.concat(whereClauses);
         return jdbcTemplate.update(sql, sqlParameterSource);
+    }
+
+    //@Override
+    //public int insertAudit(PoBean poBean, AuditType type) {
+    //    switch (type){
+    //        case IN_DB:
+    //            break;
+    //
+    //        case IN_APP:
+    //            break;
+    //    }
+    //    return 0;
+    //}
+
+    @NotImplementedAPI
+    @Override
+    public int insertAudit(PoBean poBean, AuditType type, Map<String, String> map,
+        String... whereColumnsNames) {
+        return 0;
+    }
+
+    @Override
+    public int insertAudit(PoBean poBean, AuditType type, String auditActionCd,
+        @NotNull String... whereColumnsNames) {
+        String sql = BeanDBUtils.getCachedSql(poBean.getClass(), JdbcOperationType.AUDIT_IN_APP);
+        String whereClause = BeanDBUtils.buildWhereClause(whereColumnsNames);
+        sql = sql.replace("${WHERE_CLAUSE}", whereClause);
+        MapSqlParameterSource sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
+        sqlParameterSource.addValue("AUDIT_ACTION_CD", auditActionCd);
+        log.info("insert audit sql is: {}", sql);
+        return jdbcTemplate.update(sql, sqlParameterSource);
+    }
+
+    @NotImplementedAPI
+    @Override
+    public int insertAudit(PoBean poBean, AuditType type, Map<String, String> map) {
+        return 0;
+    }
+
+    @Override
+    public int insertAudit(PoBean poBean, AuditType type, String auditActionCd) {
+        return 0;
     }
 
     class CustomerMapper<T extends PoBean> implements RowMapper<T> {
