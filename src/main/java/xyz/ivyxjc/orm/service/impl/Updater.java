@@ -26,7 +26,9 @@ import xyz.ivyxjc.orm.interfaces.PoBean;
  */
 
 /**
- * Not thread-safe
+ * <b>Not thread-safe</b>
+ * But if you just use Builder to build it once and not use reflect to modify it,
+ * you can see it as a immutable object, and it is thread-safe to some extent
  */
 @Slf4j
 public class Updater {
