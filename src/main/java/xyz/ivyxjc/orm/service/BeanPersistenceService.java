@@ -10,7 +10,7 @@ import xyz.ivyxjc.orm.service.impl.Updater;
  * @author Ivyxjc
  * @since 11/17/2018
  */
-public interface BeanService {
+public interface BeanPersistenceService {
 
     List<PoBean> query(PoBean poBean, String... whereColumnNames);
 

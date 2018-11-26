@@ -16,7 +16,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import xyz.ivyxjc.orm.bean.DataBeanPO;
 import xyz.ivyxjc.orm.enumerations.UpdateType;
 import xyz.ivyxjc.orm.interfaces.PoBean;
-import xyz.ivyxjc.orm.service.impl.BeanServiceImpl;
+import xyz.ivyxjc.orm.service.impl.BeanPersistenceServiceImpl;
 import xyz.ivyxjc.orm.service.impl.Updater;
 
 /**
@@ -27,10 +27,10 @@ import xyz.ivyxjc.orm.service.impl.Updater;
 @SpringBootTest
 @PropertySource( {"classpath:application-test.yaml"})
 public class UpdateTest {
-    private static final Logger log = LoggerFactory.getLogger(BeanServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(BeanPersistenceServiceImpl.class);
 
     @Autowired
-    private BeanService beanService;
+    private BeanPersistenceService beanPersistenceService;
 
     @Test
     public void update_0() {
@@ -44,12 +44,12 @@ public class UpdateTest {
         po.setValueDate(LocalDateTime.now());
         po.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
         po.setCreatedBy("UTUT001");
-        beanService.insert(po);
+        beanPersistenceService.insert(po);
         DataBeanPO newPo = new DataBeanPO();
         newPo.setEventId("CDE");
         newPo.setGuid(guid);
-        beanService.update(newPo, "GUID");
-        List<PoBean> list = beanService.query(newPo, "GUID");
+        beanPersistenceService.update(newPo, "GUID");
+        List<PoBean> list = beanPersistenceService.query(newPo, "GUID");
         log.info("query result size: {}", list.size());
         list.forEach(t -> log.info("result is: {}", t));
         Assert.assertEquals(1, list.size());
@@ -68,7 +68,7 @@ public class UpdateTest {
         po.setValueDate(LocalDateTime.now());
         po.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
         po.setCreatedBy("UTUT001");
-        beanService.insert(po);
+        beanPersistenceService.insert(po);
         DataBeanPO newPo = new DataBeanPO();
         newPo.setEventId("CDE");
         newPo.setGuid(guid);
@@ -79,7 +79,7 @@ public class UpdateTest {
                 .withUpdateType(UpdateType.CUSTOM)
                 .withWhereColumnNames("GUID")
                 .build();
-        beanService.update(newPo, updater);
+        beanPersistenceService.update(newPo, updater);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class UpdateTest {
         po.setValueDate(LocalDateTime.now());
         po.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
         po.setCreatedBy("UTUT001");
-        beanService.insert(po);
+        beanPersistenceService.insert(po);
         DataBeanPO newPo = new DataBeanPO();
         newPo.setEventId("CDE");
         newPo.setGuid(guid);
@@ -108,6 +108,6 @@ public class UpdateTest {
                 .withUpdateType(UpdateType.CUSTOM)
                 .withWhereColumnNames("GUID", "UNIQUE_ID")
                 .build();
-        beanService.update(newPo, updater);
+        beanPersistenceService.update(newPo, updater);
     }
 }

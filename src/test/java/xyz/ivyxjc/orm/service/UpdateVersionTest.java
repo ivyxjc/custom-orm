@@ -15,7 +15,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import xyz.ivyxjc.orm.bean.DataBeanPO;
 import xyz.ivyxjc.orm.interfaces.PoBean;
-import xyz.ivyxjc.orm.service.impl.BeanServiceImpl;
+import xyz.ivyxjc.orm.service.impl.BeanPersistenceServiceImpl;
 
 /**
  * @author Ivyxjc
@@ -25,10 +25,10 @@ import xyz.ivyxjc.orm.service.impl.BeanServiceImpl;
 @SpringBootTest
 @PropertySource( {"classpath:application-test.yaml"})
 public class UpdateVersionTest {
-    private static final Logger log = LoggerFactory.getLogger(BeanServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(BeanPersistenceServiceImpl.class);
 
     @Autowired
-    private BeanService beanService;
+    private BeanPersistenceService beanPersistenceService;
 
     @Test
     public void update_0() {
@@ -43,10 +43,10 @@ public class UpdateVersionTest {
         po.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
         po.setCreatedBy("UTUT001");
         po.setVersion(0);
-        beanService.insert(po);
+        beanPersistenceService.insert(po);
         DataBeanPO queryPo = new DataBeanPO();
         queryPo.setGuid(guid);
-        List<PoBean> list = beanService.query(queryPo, "GUID");
+        List<PoBean> list = beanPersistenceService.query(queryPo, "GUID");
         ((DataBeanPO) list.get(0)).setEventId("CDE");
         //Updater updater = Updater.builder()
         //    .withClass(DataBeanPO.class)
@@ -54,9 +54,9 @@ public class UpdateVersionTest {
         //    .withUpdateType(UpdateType.ALL)
         //    .withVersionColumn("VERSION")
         //    .build();
-        //beanService.update(list.get(0), updater);
-        beanService.update(list.get(0), "GUID");
-        List<PoBean> list2 = beanService.query(queryPo, "GUID");
+        //beanPersistenceService.update(list.get(0), updater);
+        beanPersistenceService.update(list.get(0), "GUID");
+        List<PoBean> list2 = beanPersistenceService.query(queryPo, "GUID");
         log.info("final res is: {}", list2.get(0));
         log.info("query result size: {}", list.size());
         list.forEach(t -> log.info("result is: {}", t));

@@ -24,7 +24,7 @@ import xyz.ivyxjc.orm.enumerations.JdbcOperationType;
 import xyz.ivyxjc.orm.enumerations.SupportedTypes;
 import xyz.ivyxjc.orm.enumerations.UpdateType;
 import xyz.ivyxjc.orm.interfaces.PoBean;
-import xyz.ivyxjc.orm.service.BeanService;
+import xyz.ivyxjc.orm.service.BeanPersistenceService;
 
 /**
  * @author Ivyxjc
@@ -32,7 +32,7 @@ import xyz.ivyxjc.orm.service.BeanService;
  */
 @Slf4j
 @Repository
-public class BeanServiceImpl implements BeanService {
+public class BeanPersistenceServiceImpl implements BeanPersistenceService {
 
     @Autowired
     private NamedParameterJdbcTemplate jdbcTemplate;
