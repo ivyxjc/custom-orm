@@ -28,7 +28,10 @@ import xyz.ivyxjc.orm.interfaces.PoBean;
  */
 
 /**
- * this util is just designed for the use of BeanServiceImpl, do not use it in other place
+ * this the BeanDBUtils is named the util, but it is not a <strong>pure</strong> util for the reason that
+ * it has a common resource holder: sqlCache
+ *
+ * this util is just designed for the use of BeanPersistenceServiceImpl, do not use it in other place
  */
 @Slf4j
 final class BeanDBUtils {
@@ -40,12 +43,40 @@ final class BeanDBUtils {
         "INSERT INTO %s (%s) (SELECT %s FROM %s WHERE ${WHERE_CLAUSE})";
 
     private static final Cache<String, String> sqlCache =
-        CacheBuilder.newBuilder().maximumSize(300).build();
+        CacheBuilder.newBuilder().maximumSize(1000).build();
 
     /**
-     * @param poBean
+     * try to get sql from cache, if it returns null
+     * then try to build corresponding sql and buildAuditSql corresponding audit sql
+     * and save the sql into cache for further use
+     *
+     * @param clz
+     * @param type
+     *
      * @return
      */
+    @Nullable
+    static String getCachedSql(@NotNull Class<? extends PoBean> clz,
+        @NotNull JdbcOperationType type) {
+        String sql = sqlCache.getIfPresent(buildCacheKey(clz, type));
+        if (StringUtils.isNotBlank(sql)) {
+            return sql;
+        }
+        buildSql(clz);
+        buildAuditSql(clz);
+        return sqlCache.getIfPresent(buildCacheKey(clz, type));
+    }
+
+    /**
+     * build MapSqlParameterSource based on bean
+     *
+     * put the the value of the field which has Annotation Column
+     *
+     * @param poBean instance of (sub class of PoBean)
+     *
+     * @return
+     */
+    @NotNull
     static MapSqlParameterSource buildParameterSource(PoBean poBean) {
         final MapSqlParameterSource sqlParameterSource = new MapSqlParameterSource();
         Field[] fields = poBean.getClass().getDeclaredFields();
@@ -73,8 +104,11 @@ final class BeanDBUtils {
     }
 
     /**
-     * @param sqlParameterSource
+     * add value into parameterSource
+     *
+     * @param columnName
      * @param object
+     * @param sqlParameterSource
      */
     static void addValueIntoParameterSource(
         @NotNull String columnName,
@@ -106,9 +140,11 @@ final class BeanDBUtils {
     }
 
     /**
-     * 根据bean生成对应的CRUD语句 其中 generate crud statement
+     * generate crud statement based on bean class
+     *
+     * @param clz
      */
-    static void buildSql(Class<? extends PoBean> clz) {
+    private static void buildSql(@NotNull Class<? extends PoBean> clz) {
         log.info("buildSql starts: {}", clz);
         ColumnManager columnManager = new ColumnManager();
         Field[] fields = clz.getDeclaredFields();
@@ -154,7 +190,12 @@ final class BeanDBUtils {
         sqlCache.put(buildCacheKey(clz, JdbcOperationType.DELETE), table.name());
     }
 
-    static void buildAuditSql(Class<? extends PoBean> clz) {
+    /**
+     * build corresponding audit sql based on bean class
+     *
+     * @param clz
+     */
+    private static void buildAuditSql(@NotNull Class<? extends PoBean> clz) {
         log.info("buildAuditSql starts: {}", clz);
         ColumnManager auditColumnManager = new ColumnManager();
         ColumnManager auditValueManager = new ColumnManager();
@@ -203,26 +244,25 @@ final class BeanDBUtils {
      *
      * @param clz @Notnull
      */
-    static String buildCacheKey(Class<? extends PoBean> clz, JdbcOperationType type) {
+    @NotNull
+    static String buildCacheKey(@NotNull Class<? extends PoBean> clz,
+        @NotNull JdbcOperationType type) {
         return clz.getName().concat(type.name());
     }
 
-    static String buildWhereClause(String... whereColumnNames) {
+    @NotNull
+    static String buildWhereClause(@NotNull String... whereColumnNames) {
         ColumnManager columnManager = new ColumnManager();
         Arrays.stream(whereColumnNames).forEach(t -> columnManager.addWhereColumn(t));
         return StringUtils.join(columnManager.getWhereColumns(), " and ");
     }
 
-    static String getCachedSql(Class<? extends PoBean> clz, JdbcOperationType type) {
-        String sql = sqlCache.getIfPresent(buildCacheKey(clz, type));
-        if (StringUtils.isNotBlank(sql)) {
-            return sql;
-        }
-        buildSql(clz);
-        buildAuditSql(clz);
-        return sqlCache.getIfPresent(buildCacheKey(clz, type));
-    }
-
+    /**
+     * @param version versions' column names like ['version1','version2']
+     *
+     * @return version1=:version1,version2=:version2
+     */
+    @NotNull
     static String buildUpdateVersionSql(@NotNull List<String> version) {
         List<String> list = new ArrayList<>();
         version.forEach(item -> list.add(item.concat("=:").concat(item).concat("+1")));

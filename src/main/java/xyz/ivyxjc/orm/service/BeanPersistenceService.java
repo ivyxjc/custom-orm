@@ -1,8 +1,7 @@
 package xyz.ivyxjc.orm.service;
 
 import java.util.List;
-import java.util.Map;
-import xyz.ivyxjc.orm.enumerations.AuditType;
+import org.jetbrains.annotations.NotNull;
 import xyz.ivyxjc.orm.interfaces.PoBean;
 import xyz.ivyxjc.orm.service.impl.Updater;
 
@@ -12,25 +11,15 @@ import xyz.ivyxjc.orm.service.impl.Updater;
  */
 public interface BeanPersistenceService {
 
-    List<PoBean> query(PoBean poBean, String... whereColumnNames);
+    List<PoBean> query(@NotNull PoBean poBean, @NotNull String... whereColumnNames);
 
-    int insert(PoBean poBean);
+    int insert(@NotNull PoBean poBean);
 
-    int[] batchInsert(List<PoBean> poBean);
+    int[] batchInsert(@NotNull List<PoBean> poBean);
 
-    int update(PoBean poBean, String... whereColumnsNames);
+    int update(@NotNull PoBean poBean, @NotNull String... whereColumnsNames);
 
-    int update(PoBean poBean, Updater updater);
+    int update(@NotNull PoBean poBean, @NotNull Updater updater);
 
-    int delete(PoBean poBean, String... whereColumnsNames);
-
-    int insertAudit(PoBean poBean, AuditType type, Map<String, String> map,
-        String... whereColumnsNames);
-
-    int insertAudit(PoBean poBean, AuditType type, String auditActionCd,
-        String... whereColumnsNames);
-
-    int insertAudit(PoBean poBean, AuditType type, Map<String, String> map);
-
-    int insertAudit(PoBean poBean, AuditType type, String auditActionCd);
+    int delete(@NotNull PoBean poBean, @NotNull String... whereColumnsNames);
 }
