@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.util.Assert;
 import xyz.ivyxjc.orm.annotation.AuditColumn;
 import xyz.ivyxjc.orm.annotation.AuditTable;
 import xyz.ivyxjc.orm.enumerations.JdbcOperationType;
@@ -55,7 +56,7 @@ final class BeanDBUtils {
      *
      * @return
      */
-    @Nullable
+    @NotNull
     static String getCachedSql(@NotNull Class<? extends PoBean> clz,
         @NotNull JdbcOperationType type) {
         String sql = sqlCache.getIfPresent(buildCacheKey(clz, type));
@@ -64,7 +65,13 @@ final class BeanDBUtils {
         }
         buildSql(clz);
         buildAuditSql(clz);
-        return sqlCache.getIfPresent(buildCacheKey(clz, type));
+        sql = sqlCache.getIfPresent(buildCacheKey(clz, type));
+        if (sql == null) {
+            throw new RuntimeException(
+                String.format("Fail to build sql for class %s and jdbc type %s ", clz.getName(),
+                    type.name()));
+        }
+        return sql;
     }
 
     /**
@@ -149,6 +156,7 @@ final class BeanDBUtils {
         ColumnManager columnManager = new ColumnManager();
         Field[] fields = clz.getDeclaredFields();
         Table table = clz.getDeclaredAnnotation(Table.class);
+        Assert.notNull(table, String.format("class %s should have annotation Table", clz));
         Arrays.stream(fields)
             .map(item -> item.getAnnotation(Column.class))
             .filter(Objects::nonNull)
@@ -187,7 +195,8 @@ final class BeanDBUtils {
                 String.format(UPDATE_SQL_TEMPLATE, table.name(),
                     updateColumns.concat(",").concat(updateVersionSql)));
         }
-        sqlCache.put(buildCacheKey(clz, JdbcOperationType.DELETE), table.name());
+        sqlCache.put(buildCacheKey(clz, JdbcOperationType.DELETE),
+            String.format(DELETE_SQL_TEMPLATE, table.name()));
     }
 
     /**

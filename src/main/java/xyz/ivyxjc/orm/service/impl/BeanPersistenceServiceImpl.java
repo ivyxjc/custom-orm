@@ -35,7 +35,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
     private NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
-    public List<PoBean> query(PoBean poBean, String... whereColumnsNames) {
+    public List<PoBean> query(@NotNull PoBean poBean, @NotNull String... whereColumnsNames) {
         Class<? extends PoBean> clz = poBean.getClass();
         String sql = BeanDBUtils.getCachedSql(clz, JdbcOperationType.SELECT);
         String whereClaues = BeanDBUtils.buildWhereClause(whereColumnsNames);
@@ -45,7 +45,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
     }
 
     @Override
-    public int insert(PoBean poBean) {
+    public int insert(@NotNull PoBean poBean) {
         String sql = BeanDBUtils.getCachedSql(poBean.getClass(), JdbcOperationType.INSERT);
 
         MapSqlParameterSource sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
@@ -73,7 +73,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
     }
 
     @Override
-    public int update(PoBean poBean, String... whereColumnsNames) {
+    public int update(@NotNull PoBean poBean, @NotNull String... whereColumnsNames) {
         String sql = BeanDBUtils.getCachedSql(poBean.getClass(), JdbcOperationType.UPDATE);
         String whereClause = BeanDBUtils.buildWhereClause(whereColumnsNames);
         MapSqlParameterSource sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
@@ -84,7 +84,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
      * 目前不支持 自定义wheresql
      */
     @Override
-    public int update(PoBean poBean, Updater updater) {
+    public int update(@NotNull PoBean poBean, @NotNull Updater updater) {
 
         MapSqlParameterSource sqlParameterSource;
         String sql;
@@ -140,7 +140,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
     }
 
     @Override
-    public int delete(PoBean poBean, String... whereColumnsNames) {
+    public int delete(@NotNull PoBean poBean, @NotNull String... whereColumnsNames) {
         // TODO: 11/21/2018 optimize the buildParameterSource, just include needed columns
         MapSqlParameterSource sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
         String whereClauses = BeanDBUtils.buildWhereClause(whereColumnsNames);
