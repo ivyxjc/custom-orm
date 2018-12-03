@@ -21,7 +21,7 @@ public class Runner {
     //public class BasicRunner implements CommandLineRunner {
     //    @Autowired private JdbcTemplate jdbcTemplate;
     //
-    //    @Autowired private BeanServiceImpl beanServiceImpl;
+    //    @Autowired private BeanPersistenceServiceImpl beanServiceImpl;
     //
     //    @Override
     //    public void run(String... args) throws Exception {

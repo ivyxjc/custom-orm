@@ -1,16 +1,15 @@
 package xyz.ivyxjc.orm.service;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.DigestUtils;
 import xyz.ivyxjc.orm.bean.DataBeanPO;
 import xyz.ivyxjc.orm.service.impl.BeanPersistenceServiceImpl;
 
@@ -19,9 +18,9 @@ import xyz.ivyxjc.orm.service.impl.BeanPersistenceServiceImpl;
  * @since 11/22/2018
  */
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@PropertySource( {"classpath:application-test.yaml"})
+//@RunWith(SpringRunner.class)
+//@SpringBootTest
+//@PropertySource( {"classpath:application-test.yaml"})
 public class AuditTest {
 
     private static final Logger log = LoggerFactory.getLogger(BeanPersistenceServiceImpl.class);
@@ -50,5 +49,11 @@ public class AuditTest {
         beanPersistenceService.update(newPo, "GUID");
 
         //beanPersistenceService.insertAudit(newPo, AuditType.IN_APP, "U", "GUID");
+    }
+
+    @Test
+    public void doSome2() throws UnsupportedEncodingException {
+        String res = DigestUtils.md5DigestAsHex("abcdef".getBytes("utf-8"));
+        System.out.print(StringUtils.upperCase(res));
     }
 }
