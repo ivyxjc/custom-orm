@@ -5,5 +5,6 @@ import xyz.ivyxjc.orm.interfaces.PoBean;
 
 public interface SqlGenerator {
 
-    String getCachedSql(Class<? extends PoBean> poBean, JdbcOperationType type);
+    String getFinalSql(PoBean poBean, JdbcOperationType type) throws IllegalAccessException;
+
 }
