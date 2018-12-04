@@ -1,8 +1,11 @@
 package xyz.ivyxjc.orm.service.impl;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import javax.persistence.Version;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +27,49 @@ public class SqlGeneratorImplTest {
     private SqlGenerator sqlGenerator;
 
     @Test
-    public void testInsert() {
-        String sql = sqlGenerator.getCachedSql(DataBean.class, JdbcOperationType.INSERT);
-        System.out.println(sql);
+    public void testInsertCachedSql()
+        throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method methodGetCachedSql =
+            SqlGeneratorImpl.class.getDeclaredMethod("getCachedSql", Class.class,
+                JdbcOperationType.class);
+        String sql = (String) methodGetCachedSql.invoke(sqlGenerator, DataBean.class,
+            JdbcOperationType.INSERT);
+        Assert.assertEquals(
+            "INSERT INTO DATA_BEAN (GUID,UNIQUE_ID,EVENT_ID,VALUE_DATE,VERSION${INSERT_COLUMNS_PLACEHOLDER}) VALUES (hextoraw(:GUID),:UNIQUE_ID,:EVENT_ID,:VALUE_DATE,0${INSERT_VALUES_PLACEHOLDER})",
+            sql);
     }
 
     @Test
-    public void testUpdate() {
-        String sql = sqlGenerator.getCachedSql(DataBean.class, JdbcOperationType.UPDATE);
-        System.out.println(sql);
+    public void testUpdateCachedSql()
+        throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method methodGetCachedSql =
+            SqlGeneratorImpl.class.getDeclaredMethod("getCachedSql", Class.class,
+                JdbcOperationType.class);
+        String sql = (String) methodGetCachedSql.invoke(sqlGenerator, DataBean.class,
+            JdbcOperationType.UPDATE);
+        Assert.assertEquals(
+            "UPDATE DATA_BEAN SET UNIQUE_ID=:UNIQUE_ID,EVENT_ID=:EVENT_ID,VALUE_DATE=:VALUE_DATE,VERSION=:VERSION+1${UPDATE_PLACEHOLDER} WHERE ",
+            sql);
+    }
+
+    @Test
+    public void testFinalSql() throws IllegalAccessException {
+        DataBean dataBean = new DataBean();
+        dataBean.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
+        String insertSql = sqlGenerator.getFinalSql(dataBean, JdbcOperationType.INSERT);
+        String deleteSql = sqlGenerator.getFinalSql(dataBean, JdbcOperationType.DELETE);
+        String updateSql = sqlGenerator.getFinalSql(dataBean, JdbcOperationType.UPDATE);
+        String selectSql = sqlGenerator.getFinalSql(dataBean, JdbcOperationType.SELECT);
+        Assert.assertEquals(
+            "INSERT INTO DATA_BEAN (GUID,UNIQUE_ID,EVENT_ID,VALUE_DATE,VERSION,CREATED_AT,CREATED_BY) VALUES (hextoraw(:GUID),:UNIQUE_ID,:EVENT_ID,:VALUE_DATE,0,:CREATED_AT,sys_context('USERENV', 'SESSION_USER') )",
+            insertSql);
+        Assert.assertEquals("DELETE FROM DATA_BEAN WHERE ", deleteSql);
+        Assert.assertEquals(
+            "UPDATE DATA_BEAN SET UNIQUE_ID=:UNIQUE_ID,EVENT_ID=:EVENT_ID,VALUE_DATE=:VALUE_DATE,VERSION=:VERSION+1,UPDATED_AT=systimestamp,UPDATED_BY=sys_context('USERENV', 'SESSION_USER')  WHERE ",
+            updateSql);
+        Assert.assertEquals(
+            "SELECT GUID,UNIQUE_ID,EVENT_ID,VALUE_DATE,CREATED_AT,CREATED_BY,UPDATED_AT,UPDATED_BY,VERSION FROM DATA_BEAN WHERE ",
+            selectSql);
     }
 }
 
@@ -57,6 +94,13 @@ class DataBean implements PoBean {
     @ZColumn(name = "CREATED_BY", defaultValue = "sys_context('USERENV', 'SESSION_USER') ",
              updatable = false)
     private String createdBy;
+
+    @ZColumn(name = "UPDATED_AT", defaultValue = "systimestamp", insertable = false)
+    private Timestamp updatedAt;
+
+    @ZColumn(name = "UPDATED_BY", defaultValue = "sys_context('USERENV', 'SESSION_USER') ",
+             insertable = false)
+    private String updatedBy;
 
     @ZColumn(name = "VERSION", isVersion = true)
     private Version version;
@@ -99,6 +143,38 @@ class DataBean implements PoBean {
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Timestamp getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public Version getVersion() {
+        return version;
+    }
+
+    public void setVersion(Version version) {
+        this.version = version;
     }
 }
 
