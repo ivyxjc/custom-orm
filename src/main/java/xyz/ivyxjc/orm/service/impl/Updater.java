@@ -1,24 +1,20 @@
 package xyz.ivyxjc.orm.service.impl;
 
-import com.google.protobuf.ExperimentalApi;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import javax.persistence.Column;
-import javax.persistence.Table;
-import javax.persistence.Version;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.util.Assert;
 import xyz.ivyxjc.orm.annotation.NotImplementedAPI;
+import xyz.ivyxjc.orm.annotation.ZTable;
 import xyz.ivyxjc.orm.enumerations.UpdateType;
 import xyz.ivyxjc.orm.interfaces.PoBean;
+import xyz.ivyxjc.orm.service.ColumnsContainer;
 
 /**
  * @author Ivyxjc
@@ -102,7 +98,7 @@ public class Updater {
     }
 
     public static class Builder {
-        private static final String UPDATE_SQL_TEMPLATE = "UPDATE %s SET %s WHERE ";
+        private static final String UPDATE_SQL_TEMPLATE = "UPDATE %s SET %s WHERE %s";
         private final List<String> whereColumnNames;
         @Nullable
         private final List<String> whereCustomSqls;
@@ -138,9 +134,7 @@ public class Updater {
         }
 
         @NotImplementedAPI
-        @ExperimentalApi
         public Builder withCustomSqls(@NotNull String... sqls) {
-
             this.whereCustomSqls.addAll(Arrays.asList(sqls));
             return this;
         }
@@ -156,26 +150,15 @@ public class Updater {
         }
 
         public Updater build() {
-            ColumnManager columnManager = new ColumnManager();
-            Table table = beanClz.getDeclaredAnnotation(Table.class);
+            ZTable table = beanClz.getDeclaredAnnotation(ZTable.class);
+            ColumnsContainer container = SqlDBUtils.buildColumns(beanClz);
+            List<String> updateClauseList = new ArrayList<>();
+            List<String> whereClauseList = new ArrayList<>();
             switch (updateType) {
                 case ALL:
-                    Field[] fields = beanClz.getDeclaredFields();
-                    Arrays.stream(fields)
-                        .map(item -> {
-                            if (item.getAnnotation(Version.class) == null) {
-                                return item.getAnnotation(Column.class);
-                            } else {
-                                return null;
-                            }
-                        })
-                        .filter(Objects::nonNull)
-                        .forEach(
-                            column -> {
-                                if (column.updatable()) {
-                                    columnManager.addUpdateColumn(column.name());
-                                }
-                            });
+                    /**
+                     * can user SqlGenerator generate method
+                     */
                     break;
                 case CUSTOM:
                     Assert.notNull(
@@ -184,19 +167,21 @@ public class Updater {
                     Assert.notEmpty(
                         updateColumns,
                         "If you choose custom update type, the update columns should not be empty");
-                    updateColumns.forEach(t -> columnManager.addUpdateColumn(t));
+                    for (String tmpUpdateColumn : updateColumns) {
+                        updateClauseList.add(tmpUpdateColumn.concat("=:").concat(tmpUpdateColumn));
+                    }
+                    for (String tmpWhereColumnName : whereColumnNames) {
+                        whereClauseList.add(
+                            tmpWhereColumnName.concat("=:").concat(tmpWhereColumnName));
+                    }
+                case NOTNULL:
+                    break;
             }
 
-            String updateClause = StringUtils.join(columnManager.getUpdateColumns(), ",");
-            if (!versions.isEmpty()) {
-                updateClause =
-                    updateClause.concat(",").concat(BeanDBUtils.buildUpdateVersionSql(versions));
-            }
-            String updateSql = String.format(UPDATE_SQL_TEMPLATE, table.name(), updateClause);
-            whereColumnNames.forEach(t -> columnManager.addWhereColumn(t));
-            versions.forEach(t -> columnManager.addWhereColumn(t));
-            String whereClause = StringUtils.join(columnManager.getWhereColumns(), " and ");
-            this.updateSql = updateSql.concat(whereClause);
+            String updateClause = StringUtils.join(updateClauseList, ",");
+            String whereClause = StringUtils.join(whereClauseList, " and ");
+            this.updateSql =
+                String.format(UPDATE_SQL_TEMPLATE, table.name(), updateClause, whereClause);
             log.info("update sql is: {}", this.updateSql);
             return new Updater(this);
         }
