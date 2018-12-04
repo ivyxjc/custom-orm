@@ -16,9 +16,9 @@ public class SqlGeneratorImpl extends AbstractSqlGenerator {
 
     @Override
     public String getFinalSql(PoBean poBean, JdbcOperationType type) throws IllegalAccessException {
-        String cachedSql = sqlCache.get(SqlDBUtils.buildCacheKey(poBean.getClass(), type));
+        String cachedSql = getCachedSql(poBean.getClass(), type);
 
-        if (JdbcOperationType.INSERT.equals(type) || JdbcOperationType.SELECT.equals(type)) {
+        if (JdbcOperationType.DELETE.equals(type) || JdbcOperationType.SELECT.equals(type)) {
             return cachedSql;
         }
         ColumnsContainer columnsContainer = getCachedColumnsContainer(poBean.getClass());

@@ -28,16 +28,19 @@ public class ColumnsContainerImpl implements ColumnsContainer {
     @Override
     public void addColumn(Field field) {
         ZColumn column = field.getAnnotation(ZColumn.class);
-        if (column.isVersion()) {
-            versionList.add(column);
-        } else if (StringUtils.isNotBlank(column.defaultValue())) {
+        columnList.add(column);
+        if (StringUtils.isNotBlank(column.defaultValue())) {
+            field.setAccessible(true);
             columnWithDefaultList.add(field);
         } else {
-            columnList.add(column);
+            columnWithoutDefaultList.add(column);
         }
 
         if (column.isRawType()) {
             rawTypeSet.add(column.name());
+        }
+        if (column.isVersion()) {
+            versionList.add(column);
         }
     }
 

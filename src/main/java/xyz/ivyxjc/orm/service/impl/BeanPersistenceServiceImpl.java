@@ -139,8 +139,9 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
         //        sql = newUpdater.getUpdateSql();
         //        return jdbcTemplate.update(sql, sqlParameterSource);
         //}
-        throw new IllegalArgumentException(
-            "Unsupported update type ".concat(updater.getUpdateType().name()));
+        throw new RuntimeException();
+        //throw new IllegalArgumentException(
+        //    "Unsupported update type ".concat(updater.getUpdateType().name()));
     }
 
     @Override
