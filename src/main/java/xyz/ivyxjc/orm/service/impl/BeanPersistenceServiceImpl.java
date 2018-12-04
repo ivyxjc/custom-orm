@@ -7,6 +7,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.persistence.Column;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +19,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 import xyz.ivyxjc.orm.enumerations.JdbcOperationType;
 import xyz.ivyxjc.orm.enumerations.SupportedTypes;
+import xyz.ivyxjc.orm.enumerations.UpdateType;
 import xyz.ivyxjc.orm.interfaces.PoBean;
 import xyz.ivyxjc.orm.service.BeanPersistenceService;
 import xyz.ivyxjc.orm.service.SqlGenerator;
@@ -44,15 +46,15 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
         String whereClaues = SqlDBUtils.buildWhereClause(whereColumnsNames);
         sql = sql.concat(whereClaues);
         MapSqlParameterSource sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
+        log.debug("query sql is:{}", sql);
         return jdbcTemplate.query(sql, sqlParameterSource, new CustomerMapper(clz));
     }
 
     @Override
     public int insert(@NotNull PoBean poBean) throws IllegalAccessException {
         String sql = sqlGenerator.getFinalSql(poBean, JdbcOperationType.INSERT);
-
         MapSqlParameterSource sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
-        log.info("insert sql is: {}", sql);
+        log.debug("insert sql is: {}", sql);
         return jdbcTemplate.update(sql, sqlParameterSource);
     }
 
@@ -63,16 +65,12 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
         }
         PoBean firstOne = list.get(0);
         String sql = sqlGenerator.getFinalSql(firstOne, JdbcOperationType.INSERT);
-
+        log.debug("batch insert sql is: {}", sql);
         SqlParameterSource[] parameterSourceArray = new SqlParameterSource[list.size()];
         for (int i = 0; i < list.size(); i++) {
             parameterSourceArray[i] = SqlDBUtils.buildParameterSource(list.get(i));
         }
-        Long t1 = System.currentTimeMillis();
-        int[] res = jdbcTemplate.batchUpdate(sql, parameterSourceArray);
-        Long t2 = System.currentTimeMillis();
-        log.info("sql execute time is: {}", t2 - t1);
-        return res;
+        return jdbcTemplate.batchUpdate(sql, parameterSourceArray);
     }
 
     @Override
@@ -81,6 +79,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
         String sql = sqlGenerator.getFinalSql(poBean, JdbcOperationType.UPDATE);
         String whereClause = SqlDBUtils.buildWhereClause(whereColumnsNames);
         MapSqlParameterSource sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
+        log.debug("update sql is:{}", sql);
         return jdbcTemplate.update(sql.concat(whereClause), sqlParameterSource);
     }
 
@@ -88,60 +87,59 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
      * 目前不支持 自定义wheresql
      */
     @Override
-    public int update(@NotNull PoBean poBean, @NotNull Updater updater) {
+    public int update(@NotNull PoBean poBean, @NotNull Updater updater)
+        throws IllegalAccessException {
 
-        //MapSqlParameterSource sqlParameterSource;
-        //String sql;
-        //switch (updater.getUpdateType()) {
-        //    case ALL:
-        //        sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
-        //        sql = updater.getUpdateSql();
-        //        return jdbcTemplate.update(sql, sqlParameterSource);
-        //    case CUSTOM:
-        //        // TODO: 11/21/2018 optimize the buildParameterSource, just include needed columns
-        //        sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
-        //        sql = updater.getUpdateSql();
-        //        return jdbcTemplate.update(sql, sqlParameterSource);
-        //    case NOTNULL:
-        //        // TODO: 11/21/2018 optimize the buildParameterSource, just include needed columns
-        //        sqlParameterSource = BeanDBUtils.buildParameterSource(poBean);
-        //        List<String> whereColumnNames = updater.getWhereColumnNames();
-        //        List<String> whereSqls = updater.getWhereCustomSql();
-        //        List<String> updateColumns =
-        //            Arrays.stream(poBean.getClass().getDeclaredFields())
-        //                .filter(t -> t.getAnnotation(Column.class) != null)
-        //                .filter(
-        //                    t -> {
-        //                        t.setAccessible(true);
-        //                        try {
-        //                            return t.get(poBean) != null;
-        //                        } catch (IllegalAccessException e) {
-        //                            e.printStackTrace();
-        //                            throw new RuntimeException();
-        //                        }
-        //                    })
-        //                .map(
-        //                    f -> {
-        //                        Column col = f.getAnnotation(Column.class);
-        //                        return col.name();
-        //                    })
-        //                .collect(Collectors.toList());
-        //        Updater newUpdater =
-        //            Updater.builder()
-        //                .withUpdateColumns(
-        //                    updateColumns.toArray(new String[updateColumns.size()]))
-        //                .withWhereColumnNames(
-        //                    whereColumnNames.toArray(new String[updateColumns.size()]))
-        //                .withCustomSqls(whereSqls.toArray(new String[whereSqls.size()]))
-        //                .withUpdateType(UpdateType.CUSTOM)
-        //                .build();
-        //
-        //        sql = newUpdater.getUpdateSql();
-        //        return jdbcTemplate.update(sql, sqlParameterSource);
-        //}
-        throw new RuntimeException();
-        //throw new IllegalArgumentException(
-        //    "Unsupported update type ".concat(updater.getUpdateType().name()));
+        MapSqlParameterSource sqlParameterSource;
+        String sql;
+        switch (updater.getUpdateType()) {
+            case ALL:
+                return update(poBean, (String[]) updater.getWhereColumnNames().toArray());
+            case CUSTOM:
+                // TODO: 11/21/2018 optimize the buildParameterSource, just include needed columns
+                sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
+                sql = updater.getUpdateSql();
+                return jdbcTemplate.update(sql, sqlParameterSource);
+            case NOTNULL:
+                // TODO: 11/21/2018 optimize the buildParameterSource, just include needed columns
+                sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
+                List<String> whereColumnNames = updater.getWhereColumnNames();
+                List<String> whereSqls = updater.getWhereCustomSql();
+                List<String> updateColumns =
+                    Arrays.stream(poBean.getClass().getDeclaredFields())
+                        .filter(t -> t.getAnnotation(Column.class) != null)
+                        .filter(
+                            t -> {
+                                t.setAccessible(true);
+                                try {
+                                    return t.get(poBean) != null;
+                                } catch (IllegalAccessException e) {
+                                    e.printStackTrace();
+                                    throw new RuntimeException();
+                                }
+                            })
+                        .map(
+                            f -> {
+                                Column col = f.getAnnotation(Column.class);
+                                return col.name();
+                            })
+                        .collect(Collectors.toList());
+                Updater newUpdater =
+                    Updater.builder()
+                        .withUpdateColumns(
+                            updateColumns.toArray(new String[updateColumns.size()]))
+                        .withWhereColumnNames(
+                            whereColumnNames.toArray(new String[updateColumns.size()]))
+                        .withCustomSqls(whereSqls.toArray(new String[whereSqls.size()]))
+                        .withUpdateType(UpdateType.CUSTOM)
+                        .build();
+
+                sql = newUpdater.getUpdateSql();
+                return jdbcTemplate.update(sql, sqlParameterSource);
+            default:
+                throw new IllegalArgumentException(
+                    "Unsupported update type ".concat(updater.getUpdateType().name()));
+        }
     }
 
     @Override
@@ -152,6 +150,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
         String whereClauses = SqlDBUtils.buildWhereClause(whereColumnsNames);
         String sql = sqlGenerator.getFinalSql(poBean, JdbcOperationType.DELETE);
         sql = sql.concat(whereClauses);
+        log.debug("delete sql is:{}", sql);
         return jdbcTemplate.update(sql, sqlParameterSource);
     }
 

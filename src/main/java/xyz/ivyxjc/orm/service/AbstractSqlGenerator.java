@@ -47,7 +47,7 @@ public abstract class AbstractSqlGenerator implements SqlGenerator {
         @NotNull List<String> columns,
         @NotNull List<String> values,
         @NotNull JdbcOperationType type) {
-        columnsContainer.getColumnList().stream().filter(column -> {
+        columnsContainer.getColumnWithoutDefaultList().stream().filter(column -> {
             switch (type) {
                 case INSERT:
                     return column.insertable();
@@ -107,9 +107,8 @@ public abstract class AbstractSqlGenerator implements SqlGenerator {
         ColumnsContainer columnsContainer = getCachedColumnsContainer(clz);
         List<String> selectColumns = new ArrayList<>();
         columnsContainer.getColumnList().forEach(t -> selectColumns.add(t.name()));
-
-        return String.format(SELECT_SQL_TEMPLATE, zTable.name(),
-            StringUtils.join(selectColumns, ","));
+        return String.format(SELECT_SQL_TEMPLATE, StringUtils.join(selectColumns, ","),
+            zTable.name());
     }
 
     @NotNull
@@ -119,15 +118,16 @@ public abstract class AbstractSqlGenerator implements SqlGenerator {
         List<String> insertValueList = new ArrayList<>();
         for (Field field : columnsContainer.getColumnWithDefaultList()) {
             ZColumn column = field.getAnnotation(ZColumn.class);
-            if (field.get(poBean) == null) {
-                insertColumnList.add(column.name());
-                insertValueList.add(column.defaultValue());
-            } else {
-                insertColumnList.add(column.name());
-                insertValueList.add(":".concat(column.name()));
+            if (column.insertable()) {
+                if (field.get(poBean) == null) {
+                    insertColumnList.add(column.name());
+                    insertValueList.add(column.defaultValue());
+                } else {
+                    insertColumnList.add(column.name());
+                    insertValueList.add(":".concat(column.name()));
+                }
             }
         }
-
         if (!insertColumnList.isEmpty()) {
             String insertColumnSql = StringUtils.join(insertColumnList, ",");
             String insertValueSql = StringUtils.join(insertValueList, ",");
@@ -147,10 +147,12 @@ public abstract class AbstractSqlGenerator implements SqlGenerator {
         List<String> updateList = new ArrayList<>();
         for (Field field : columnsContainer.getColumnWithDefaultList()) {
             ZColumn column = field.getAnnotation(ZColumn.class);
-            if (field.get(poBean) == null) {
-                updateList.add(column.name().concat("=").concat(column.defaultValue()));
-            } else {
-                updateList.add(column.name().concat("=").concat(column.name()));
+            if (column.updatable()) {
+                if (field.get(poBean) == null) {
+                    updateList.add(column.name().concat("=").concat(column.defaultValue()));
+                } else {
+                    updateList.add(column.name().concat("=").concat(column.name()));
+                }
             }
         }
 

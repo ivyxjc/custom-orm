@@ -21,7 +21,7 @@ public interface BeanPersistenceService {
     int update(@NotNull PoBean poBean, @NotNull String... whereColumnsNames)
         throws IllegalAccessException;
 
-    int update(@NotNull PoBean poBean, @NotNull Updater updater);
+    int update(@NotNull PoBean poBean, @NotNull Updater updater) throws IllegalAccessException;
 
     int delete(@NotNull PoBean poBean, @NotNull String... whereColumnsNames)
         throws IllegalAccessException;
