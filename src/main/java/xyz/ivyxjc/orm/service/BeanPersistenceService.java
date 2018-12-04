@@ -11,15 +11,18 @@ import xyz.ivyxjc.orm.service.impl.Updater;
  */
 public interface BeanPersistenceService {
 
-    List<PoBean> query(@NotNull PoBean poBean, @NotNull String... whereColumnNames);
+    List<PoBean> query(@NotNull PoBean poBean, @NotNull String... whereColumnNames)
+        throws IllegalAccessException;
 
-    int insert(@NotNull PoBean poBean);
+    int insert(@NotNull PoBean poBean) throws IllegalAccessException;
 
-    int[] batchInsert(@NotNull List<PoBean> poBean);
+    int[] batchInsert(@NotNull List<PoBean> poBean) throws IllegalAccessException;
 
-    int update(@NotNull PoBean poBean, @NotNull String... whereColumnsNames);
+    int update(@NotNull PoBean poBean, @NotNull String... whereColumnsNames)
+        throws IllegalAccessException;
 
     int update(@NotNull PoBean poBean, @NotNull Updater updater);
 
-    int delete(@NotNull PoBean poBean, @NotNull String... whereColumnsNames);
+    int delete(@NotNull PoBean poBean, @NotNull String... whereColumnsNames)
+        throws IllegalAccessException;
 }
