@@ -17,9 +17,7 @@ public @interface AuditColumn {
 
     String name();
 
-    String defaultTemplateValue() default "";
-
-    String defaultStrValue() default "";
+    String defaultValue() default "";
 
     @NotImplementedElement
     String dbType() default "";

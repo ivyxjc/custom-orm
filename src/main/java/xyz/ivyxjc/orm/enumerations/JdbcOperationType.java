@@ -10,4 +10,5 @@ public enum JdbcOperationType {
     DELETE,
     UPDATE,
     AUDIT_IN_APP,
+    AUDIT_SUB_QUERY,
 }
