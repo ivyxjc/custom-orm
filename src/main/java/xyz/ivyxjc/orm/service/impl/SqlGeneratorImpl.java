@@ -63,4 +63,17 @@ public class SqlGeneratorImpl extends AbstractSqlGenerator {
                 return null;
         }
     }
+
+    @Override
+    public String getFinalAuditSql(PoBean poBean, JdbcOperationType type) {
+        ColumnsContainer container = SqlDBUtils.buildColumns(poBean.getClass());
+        if (!(JdbcOperationType.AUDIT_IN_APP.equals(type)
+            || JdbcOperationType.AUDIT_SUB_QUERY.equals(type))) {
+            throw new RuntimeException(String.format("%s is not supported in Auidt", type.name()));
+        }
+        if (JdbcOperationType.AUDIT_SUB_QUERY.equals(type)) {
+            return buildAuditSubQuerySql(poBean, container);
+        }
+        return "";
+    }
 }

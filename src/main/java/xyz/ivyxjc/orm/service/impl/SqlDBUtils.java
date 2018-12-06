@@ -49,12 +49,16 @@ public class SqlDBUtils {
     }
 
     @NotNull
-    static String buildWhereClause(@NotNull String... whereColumnNames) {
-        ColumnManager columnManager = new ColumnManager();
-        //Arrays.stream(whereColumnNames).forEach(t -> columnManager.addWhereColumn(t));
+    static String buildWhereClause(@NotNull PoBean poBean, @NotNull String... whereColumnNames) {
+        ColumnsContainer container = buildColumns(poBean.getClass());
+        container.getRawTypeSet();
         List<String> whereList = new ArrayList<>();
         Arrays.stream(whereColumnNames).forEach(t -> {
-            whereList.add(t.concat("=:").concat(t));
+            if (container.getRawTypeSet().contains(t)) {
+                whereList.add(t.concat("=hextoraw(:").concat(t).concat(")"));
+            } else {
+                whereList.add(t.concat("=:").concat(t));
+            }
         });
         return StringUtils.join(whereList, " and ");
     }

@@ -7,4 +7,5 @@ public interface SqlGenerator {
 
     String getFinalSql(PoBean poBean, JdbcOperationType type) throws IllegalAccessException;
 
+    String getFinalAuditSql(PoBean poBean, JdbcOperationType type);
 }

@@ -43,7 +43,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
         throws IllegalAccessException {
         Class<? extends PoBean> clz = poBean.getClass();
         String sql = sqlGenerator.getFinalSql(poBean, JdbcOperationType.SELECT);
-        String whereClaues = SqlDBUtils.buildWhereClause(whereColumnsNames);
+        String whereClaues = SqlDBUtils.buildWhereClause(poBean, whereColumnsNames);
         sql = sql.concat(whereClaues);
         MapSqlParameterSource sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
         log.debug("query sql is:{}", sql);
@@ -55,6 +55,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
         String sql = sqlGenerator.getFinalSql(poBean, JdbcOperationType.INSERT);
         MapSqlParameterSource sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
         log.debug("insert sql is: {}", sql);
+        log.debug("insert poBean is: {}", poBean);
         return jdbcTemplate.update(sql, sqlParameterSource);
     }
 
@@ -77,7 +78,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
     public int update(@NotNull PoBean poBean, @NotNull String... whereColumnsNames)
         throws IllegalAccessException {
         String sql = sqlGenerator.getFinalSql(poBean, JdbcOperationType.UPDATE);
-        String whereClause = SqlDBUtils.buildWhereClause(whereColumnsNames);
+        String whereClause = SqlDBUtils.buildWhereClause(poBean, whereColumnsNames);
         MapSqlParameterSource sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
         log.debug("update sql is:{}", sql);
         return jdbcTemplate.update(sql.concat(whereClause), sqlParameterSource);
@@ -147,7 +148,7 @@ public class BeanPersistenceServiceImpl implements BeanPersistenceService {
         throws IllegalAccessException {
         // TODO: 11/21/2018 optimize the buildParameterSource, just include needed columns
         MapSqlParameterSource sqlParameterSource = SqlDBUtils.buildParameterSource(poBean);
-        String whereClauses = SqlDBUtils.buildWhereClause(whereColumnsNames);
+        String whereClauses = SqlDBUtils.buildWhereClause(poBean, whereColumnsNames);
         String sql = sqlGenerator.getFinalSql(poBean, JdbcOperationType.DELETE);
         sql = sql.concat(whereClauses);
         log.debug("delete sql is:{}", sql);

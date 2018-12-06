@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import xyz.ivyxjc.orm.annotation.AuditColumn;
+import xyz.ivyxjc.orm.annotation.AuditTable;
 import xyz.ivyxjc.orm.annotation.ZColumn;
 import xyz.ivyxjc.orm.annotation.ZTable;
 import xyz.ivyxjc.orm.enumerations.JdbcOperationType;
@@ -18,6 +20,9 @@ public abstract class AbstractSqlGenerator implements SqlGenerator {
     protected static final String UPDATE_SQL_TEMPLATE = "UPDATE %s SET %s WHERE ";
     protected static final String DELETE_SQL_TEMPLATE = "DELETE FROM %s WHERE ";
     protected static final String SELECT_SQL_TEMPLATE = "SELECT %s FROM %s WHERE ";
+    protected static final String AUDIT_SUB_QUERY_SQL_TEMPLATE =
+        "INSERT INTO %s (%s,%s)(SELECT %s,%s FROM %s WHERE ".concat(
+            CommonConstants.AUDIT_WHERE_CLAUSE_PLACEHOLDER).concat(")");
 
     protected ColumnsContainer getCachedColumnsContainer(Class<? extends PoBean> clz) {
         return SqlDBUtils.buildColumns(clz);
@@ -164,6 +169,34 @@ public abstract class AbstractSqlGenerator implements SqlGenerator {
         } else {
             return cachedSql;
         }
+    }
+
+    protected String buildAuditSubQuerySql(PoBean poBean, ColumnsContainer columnsContainer) {
+        ZTable table = poBean.getClass().getAnnotation(ZTable.class);
+        AuditTable auditTable = poBean.getClass().getAnnotation(AuditTable.class);
+        AuditColumn[] auditColumnArray = poBean.getClass().getAnnotationsByType(AuditColumn.class);
+        if (auditColumnArray.length == 0) {
+            throw new RuntimeException("No audit columns in audit table");
+        }
+        List<ZColumn> columnList = columnsContainer.getColumnList();
+        String columnsSql = StringUtils.join(columnList);
+        List<String> auditColumns = new ArrayList<>();
+        StringBuilder auditSubQuerySql = new StringBuilder();
+        for (AuditColumn tmpAuditColumn : auditColumnArray) {
+            auditColumns.add(tmpAuditColumn.name());
+            if (StringUtils.isNotBlank(tmpAuditColumn.defaultValue())) {
+                auditSubQuerySql.append(
+                    tmpAuditColumn.defaultValue().concat(" as ").concat(tmpAuditColumn.name()));
+            } else {
+                auditSubQuerySql.append(
+                    ":".concat(tmpAuditColumn.name()).concat(" as ").concat(tmpAuditColumn.name()));
+            }
+        }
+        String auditColumnSql = StringUtils.join(auditColumns);
+
+        return String.format(AUDIT_SUB_QUERY_SQL_TEMPLATE, auditTable.name(), columnsSql,
+            auditColumnSql,
+            columnsSql, auditSubQuerySql, table.name());
     }
 }
 

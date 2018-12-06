@@ -1,12 +1,17 @@
 package xyz.ivyxjc.orm.service;
 
-import xyz.ivyxjc.orm.enumerations.AuditType;
+import java.util.Map;
 import xyz.ivyxjc.orm.interfaces.PoBean;
 
 public interface AuditPersisitenceService {
 
-    int insertAudit(PoBean poBean, AuditType type, String auditActionCd,
+    int insertAuditBySubQuery(PoBean poBean, String auditActionCd,
         String... whereColumnsNames);
 
-    int insertAudit(PoBean poBean, AuditType type, String auditActionCd);
+    int insertAuditBySubQuery(PoBean poBean, String auditActionCd, Map<String, String> map,
+        String... whereColumnsNames);
+
+    int insertAudit(PoBean poBean, String auditActionCd);
+
+    int insertAudit(PoBean poBean, String auditActionCd, Map<String, String> map);
 }
